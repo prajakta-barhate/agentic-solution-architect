@@ -3,7 +3,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.api.routes.projects import router as projects_router
 from app.database import get_db
+from app.database.base import Base
+from app.database.session import engine
 from config import get_settings
 
 settings = get_settings()
@@ -15,6 +18,16 @@ app = FastAPI(
     docs_url="/docs" if settings.environment == "development" else None,
     redoc_url="/redoc" if settings.environment == "development" else None,
 )
+
+app.include_router(projects_router)
+
+
+@app.on_event("startup")
+def initialize_database() -> None:
+    try:
+        Base.metadata.create_all(bind=engine)
+    except SQLAlchemyError:
+        pass
 
 
 @app.get("/health")
